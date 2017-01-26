@@ -39,6 +39,7 @@ Install RainbowDataAnalyzer from the extensions and updates window.
 ## How it works
 
 This is a Roslyn analyzer, which means that it plugs into the compiler API's to check the code syntax and/or semantics. This particular analyzer currently checks all string literal expressions.
+- If there are no `AdditionalFiles` specified in the project file, nothing will be validated
 - If the string starts with `/sitecore/`, we will assume that it is a sitecore path
 - If the string can be parsed as a guid, we will assume that it is a sitecore ID
 - In the AssemblyInfo.cs file, you may find a guid in a string as well; this is ignored

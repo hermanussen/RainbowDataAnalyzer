@@ -71,6 +71,12 @@ namespace RainbowDataAnalyzer
 
             try
             {
+                // If there are no .yml files available in the project, we should not validate
+                if (!context.Options.AdditionalFiles.Any())
+                {
+                    return;
+                }
+
                 // Check all string literal expressions
                 var pathOrId = context.Node.ToString().TrimStart('@').Trim('"');
                 Guid valueAsId;
