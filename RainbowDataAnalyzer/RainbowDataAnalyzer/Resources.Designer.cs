@@ -62,6 +62,60 @@ namespace RainbowDataAnalyzer {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The Sitecore ID should refer to a template field in serialized Rainbow data.
+        /// </summary>
+        internal static string FieldIdsAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("FieldIdsAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This ID refers to a Sitecore item which is not a field (checked in Rainbow data).
+        /// </summary>
+        internal static string FieldIdsAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("FieldIdsAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sitecore ID is not a template field in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string FieldIdsAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("FieldIdsAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field name should refer to a valid template field in serialized Rainbow data.
+        /// </summary>
+        internal static string FieldPathsAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("FieldPathsAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A valid template field with name &apos;{0}&apos; could not be found.
+        /// </summary>
+        internal static string FieldPathsAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("FieldPathsAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sitecore field name could not be found in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string FieldPathsAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("FieldPathsAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sitecore IDs should be available in serialized Rainbow (Unicorn) data.
         /// </summary>
         internal static string IdsAnalyzerDescription {

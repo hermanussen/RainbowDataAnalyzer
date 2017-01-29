@@ -16,8 +16,8 @@ Steps to include files:
   - Unload the project in Visual Studio
   - Edit the project file
   - Add the following lines somewhere in the project node and change the path
- ```xml
-   <ItemGroup>
+ ```
+  <ItemGroup>
     <AdditionalFiles Include="..\Sitecore.Data\Unicorn\templates\**\*.yml">
       <Visible>false</Visible>
     </AdditionalFiles>
@@ -32,7 +32,7 @@ Install the NuGet package from the package manager or the package manager consol
 Install-Package RainbowDataAnalyzer
 ```
 
-## Installation of the Visual Studio extension
+## Installation of the Visual Studio extension only
 
 Install RainbowDataAnalyzer from the extensions and updates window.
 
@@ -43,6 +43,8 @@ This is a Roslyn analyzer, which means that it plugs into the compiler API's to 
 - If the string starts with `/sitecore/`, we will assume that it is a sitecore path
 - If the string can be parsed as a guid, we will assume that it is a sitecore ID
 - In the AssemblyInfo.cs file, you may find a guid in a string as well; this is ignored
+- If the string or ID refers to a field, we will check if it can be found in the serialized data as well
+- Especially if you use [precompiled views](http://kamsar.net/index.php/2016/09/Precompiled-Views-with-Sitecore-8-2/), the @Html.Sitecore().Field(...) syntax is also validated.
 
 ## Future plans
 
@@ -50,5 +52,4 @@ I'd like to add support for the following features in the future. If you have an
   - Improve unit tests (there are already a few accurate ones)
   - Make it less strict, as there still appear to be some false positives
   - Make the severity configurable in Visual Studio
-  - Validate field names and field ID's (without looking at the template)
   - Find a way to track objects and verify template compatibility of field names and field id's

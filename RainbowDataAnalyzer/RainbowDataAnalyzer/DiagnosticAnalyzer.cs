@@ -35,21 +35,53 @@ namespace RainbowDataAnalyzer
             DiagnosticSeverity.Error,
             true,
             new LocalizableResourceString(nameof(Resources.PathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
+        
+        private static DiagnosticDescriptor RuleForFieldIds = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerFieldIds",
+            new LocalizableResourceString(nameof(Resources.FieldIdsAnalyzerTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.FieldIdsAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Error,
+            true,
+            new LocalizableResourceString(nameof(Resources.FieldIdsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
+        
+        private static DiagnosticDescriptor RuleForFieldNames = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerFieldPaths",
+            new LocalizableResourceString(nameof(Resources.FieldPathsAnalyzerTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.FieldPathsAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Error,
+            true,
+            new LocalizableResourceString(nameof(Resources.FieldPathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
+
+        /// <summary>
+        /// The names of possible Sitecore item types.
+        /// </summary>
+        private static readonly string[] sitecoreItemFullNames =
+            {
+                "Sitecore.Data.Items.BaseItem",
+                "Sitecore.Data.Items.Item"
+            };
+
+        /// <summary>
+        /// The ID for the template of a template field
+        /// </summary>
+        private static readonly Guid sitecoreTemplateFieldId = Guid.Parse("{455A3E98-A627-4B40-8035-E683A0331AC7}");
 
         /// <summary>
         /// Rainbow file hashes that can be used to keep reference to caches for already parsed files.
         /// </summary>
-        private Dictionary<string, int> rainbowFileHashes = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> rainbowFileHashes = new Dictionary<string, int>();
 
         /// <summary>
         /// Cached versions of parsed .yml files.
         /// </summary>
-        private Dictionary<string, RainbowFile> rainbowFiles = new Dictionary<string, RainbowFile>();
+        private readonly Dictionary<string, RainbowFile> rainbowFiles = new Dictionary<string, RainbowFile>();
 
         /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
         /// </summary>
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames); } }
 
         /// <summary>
         /// Called once at session start to register actions in the analysis context.
@@ -77,6 +109,9 @@ namespace RainbowDataAnalyzer
                     return;
                 }
 
+                // If this ID/path refers to a field, we should apply more strict validation
+                bool validateAsField = ShouldValidateAsField(context);
+
                 // Check all string literal expressions
                 var pathOrId = context.Node.ToString().TrimStart('@').Trim('"');
                 Guid valueAsId;
@@ -85,23 +120,40 @@ namespace RainbowDataAnalyzer
                     // Exclude guids that are obviously not Sitecore ID's
                     if(context.Node.Ancestors().Any(n =>
                             n is AttributeSyntax
-                            && "Guid".Equals(((AttributeSyntax) n).Name.ToString(), StringComparison.OrdinalIgnoreCase)))
+                            && nameof(Guid).Equals(((AttributeSyntax) n).Name.ToString(), StringComparison.OrdinalIgnoreCase)))
                     {
                         return;
                     }
 
                     // All guids are regarded as Sitecore ID's and will be checked
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => Guid.Equals(file.Id, valueAsId)))
+                    RainbowFile matchingFile;
+                    if (!this.Evaluate(context.Options.AdditionalFiles, file => Guid.Equals(file.Id, valueAsId), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForIds, context.Node.GetLocation(), pathOrId));
+                        return;
+                    }
+
+                    if (validateAsField && matchingFile.TemplateId != sitecoreTemplateFieldId)
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
                     }
                 }
                 else if (pathOrId.StartsWith("/sitecore/", StringComparison.OrdinalIgnoreCase))
                 {
                     // All paths that start with /sitecore/ are regarded as Sitecore paths and will be checked
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrId.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)))
+                    RainbowFile matchingFile;
+                    if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrId.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForPaths, context.Node.GetLocation(), pathOrId));
+                    }
+                }
+                else if (validateAsField && !pathOrId.Contains("/"))
+                {
+                    RainbowFile matchingFile;
+                    if (!this.Evaluate(context.Options.AdditionalFiles, file => file.TemplateId == sitecoreTemplateFieldId
+                        && string.Equals(file.ItemName, pathOrId, StringComparison.OrdinalIgnoreCase), out matchingFile))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForFieldNames, context.Node.GetLocation(), pathOrId));
                     }
                 }
             }
@@ -111,14 +163,38 @@ namespace RainbowDataAnalyzer
             }
         }
 
+        private static bool ShouldValidateAsField(SyntaxNodeAnalysisContext context)
+        {
+            SyntaxNode bracketsNode = context.Node.Ancestors()
+                .FirstOrDefault(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
+            SyntaxNode bracketsOperateOnNode = bracketsNode?.Parent.ChildNodes().First().ChildNodes()
+                .LastOrDefault(c => c is IdentifierNameSyntax) as IdentifierNameSyntax;
+
+            if (bracketsOperateOnNode != null && new [] { "Fields", "Field", "BeginField" }.Contains(bracketsOperateOnNode.ToString()))
+            {
+                return true;
+            }
+
+            if (bracketsNode?.Parent != null &&
+                     sitecoreItemFullNames.Contains(
+                         context.SemanticModel.GetSymbolInfo(bracketsNode.Parent).Symbol.ContainingSymbol.ToDisplayString()))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Evaluates if any of the .yml files match the specified function.
         /// </summary>
         /// <param name="files">The .yml files.</param>
         /// <param name="evaluateFunction">The evaluation function.</param>
+        /// <param name="matchingFile">The matching file.</param>
         /// <returns></returns>
-        private bool Evaluate(IEnumerable<AdditionalText> files, Func<RainbowFile, bool> evaluateFunction)
+        private bool Evaluate(IEnumerable<AdditionalText> files, Func<RainbowFile, bool> evaluateFunction, out RainbowFile matchingFile)
         {
+            matchingFile = null;
             foreach (AdditionalText text in files)
             {
                 RainbowFile file;
@@ -154,6 +230,7 @@ namespace RainbowDataAnalyzer
                 // Only stop evaluating if something matches
                 if (evaluateFunction(file))
                 {
+                    matchingFile = file;
                     return true;
                 }
             }
@@ -170,21 +247,31 @@ namespace RainbowDataAnalyzer
         {
             const string idParseKey = "ID: ";
             const string pathParseKey = "Path: ";
+            const string templateParseKey = "Template: ";
 
             var textLines = text.GetText().ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             if (textLines.Any())
             {
                 var result = new RainbowFile();
+
                 string textLineId = textLines.FirstOrDefault(l => l.StartsWith(idParseKey));
                 Guid idGuid;
                 if (textLineId != null && Guid.TryParse(textLineId.Substring(idParseKey.Length).Trim(' ', '"'), out idGuid))
                 {
                     result.Id = idGuid;
                 }
+
                 var textLinePath = textLines.FirstOrDefault(l => l.StartsWith(pathParseKey));
                 if (textLinePath != null)
                 {
                     result.Path = textLinePath.Substring(pathParseKey.Length).Trim();
+                }
+
+                string textLineTemplate = textLines.FirstOrDefault(l => l.StartsWith(templateParseKey));
+                Guid templateGuid;
+                if (textLineTemplate != null && Guid.TryParse(textLineTemplate.Substring(templateParseKey.Length).Trim(' ', '"'), out templateGuid))
+                {
+                    result.TemplateId = templateGuid;
                 }
 
                 return result;

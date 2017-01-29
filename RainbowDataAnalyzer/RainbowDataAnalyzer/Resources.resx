@@ -117,6 +117,24 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="FieldIdsAnalyzerDescription" xml:space="preserve">
+    <value>The Sitecore ID should refer to a template field in serialized Rainbow data</value>
+  </data>
+  <data name="FieldIdsAnalyzerMessageFormat" xml:space="preserve">
+    <value>This ID refers to a Sitecore item which is not a field (checked in Rainbow data)</value>
+  </data>
+  <data name="FieldIdsAnalyzerTitle" xml:space="preserve">
+    <value>Sitecore ID is not a template field in Rainbow (Unicorn) data</value>
+  </data>
+  <data name="FieldPathsAnalyzerDescription" xml:space="preserve">
+    <value>The field name should refer to a valid template field in serialized Rainbow data</value>
+  </data>
+  <data name="FieldPathsAnalyzerMessageFormat" xml:space="preserve">
+    <value>A valid template field with name '{0}' could not be found</value>
+  </data>
+  <data name="FieldPathsAnalyzerTitle" xml:space="preserve">
+    <value>Sitecore field name could not be found in Rainbow (Unicorn) data</value>
+  </data>
   <data name="IdsAnalyzerDescription" xml:space="preserve">
     <value>Sitecore IDs should be available in serialized Rainbow (Unicorn) data</value>
   </data>
