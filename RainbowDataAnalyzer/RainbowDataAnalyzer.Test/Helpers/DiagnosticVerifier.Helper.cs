@@ -9,6 +9,9 @@ using System.Linq;
 
 namespace TestHelper
 {
+    using RainbowDataAnalyzer.Test.Helpers;
+    using Sitecore.Data.Items;
+
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them
     /// All methods are static
@@ -19,11 +22,15 @@ namespace TestHelper
         private static readonly MetadataReference SystemCoreReference = MetadataReference.CreateFromFile(typeof(Enumerable).Assembly.Location);
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
+        private static readonly MetadataReference SitecoreKernelReference = MetadataReference.CreateFromFile(typeof(Item).Assembly.Location);
+
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
         internal static string VisualBasicDefaultExt = "vb";
         internal static string TestProjectName = "TestProject";
+
+        private static readonly string[] ignoreDiagnostics = new[] {"CS5001", "CS0414"};
 
         #region  Get Diagnostics
 
@@ -33,10 +40,11 @@ namespace TestHelper
         /// <param name="sources">Classes in the form of strings</param>
         /// <param name="language">The language the source classes are in</param>
         /// <param name="analyzer">The analyzer to be run on the sources</param>
+        /// <param name="yamlContents"></param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        private static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer)
+        private static Diagnostic[] GetSortedDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer, string[] yamlContents)
         {
-            return GetSortedDiagnosticsFromDocuments(analyzer, GetDocuments(sources, language));
+            return GetSortedDiagnosticsFromDocuments(analyzer, GetDocuments(sources, language), yamlContents);
         }
 
         /// <summary>
@@ -45,8 +53,9 @@ namespace TestHelper
         /// </summary>
         /// <param name="analyzer">The analyzer to run on the documents</param>
         /// <param name="documents">The Documents that the analyzer will be run on</param>
+        /// <param name="yamlContents"></param>
         /// <returns>An IEnumerable of Diagnostics that surfaced in the source code, sorted by Location</returns>
-        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(DiagnosticAnalyzer analyzer, Document[] documents)
+        protected static Diagnostic[] GetSortedDiagnosticsFromDocuments(DiagnosticAnalyzer analyzer, Document[] documents, string[] yamlContents)
         {
             var projects = new HashSet<Project>();
             foreach (var document in documents)
@@ -57,10 +66,13 @@ namespace TestHelper
             var diagnostics = new List<Diagnostic>();
             foreach (var project in projects)
             {
-                var compilationWithAnalyzers = project.GetCompilationAsync().Result.WithAnalyzers(ImmutableArray.Create(analyzer));
-                var diags = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result;
+                var compilationWithAnalyzers = project.GetCompilationAsync().Result.WithAnalyzers(
+                    ImmutableArray.Create(analyzer),
+                    new AnalyzerOptions(yamlContents.Select((c, i) => new AnalyzerAdditionalFile($"SomeYamlFile_{i}.yml", c)).Cast<AdditionalText>().ToImmutableArray()));
+                var diags = compilationWithAnalyzers.GetAllDiagnosticsAsync().Result.Where(d => !ignoreDiagnostics.Contains(d.Id));
                 foreach (var diag in diags)
                 {
+                    Console.WriteLine($"{diag}");
                     if (diag.Location == Location.None || diag.Location.IsInMetadata)
                     {
                         diagnostics.Add(diag);
@@ -118,7 +130,7 @@ namespace TestHelper
             {
                 throw new ArgumentException("Amount of sources did not match amount of Documents created");
             }
-
+            
             return documents;
         }
 
@@ -145,12 +157,7 @@ namespace TestHelper
             string fileExt = language == LanguageNames.CSharp ? CSharpDefaultFileExt : VisualBasicDefaultExt;
 
             var projectId = ProjectId.CreateNewId(debugName: TestProjectName);
-
-            var additionalDocumentId = DocumentId.CreateNewId(projectId, debugName: TestProjectName + "DocumentId");
-            const string testYaml = "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent";
-            var additionalDocument = DocumentInfo.Create(additionalDocumentId, "SomeYamlFile.yml", new [] {"Folder"})
-                    .WithTextLoader(TextLoader.From(TextAndVersion.Create(SourceText.From(testYaml), VersionStamp.Default, "SomeYamlFile.yml")));
-
+            
             var solution = new AdhocWorkspace()
                 .CurrentSolution
                 .AddProject(projectId, TestProjectName, TestProjectName, language)
@@ -158,7 +165,7 @@ namespace TestHelper
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference)
-                .AddAdditionalDocument(additionalDocument);
+                .AddMetadataReference(projectId, SitecoreKernelReference);
 
             int count = 0;
             foreach (var source in sources)

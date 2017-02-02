@@ -9,17 +9,8 @@
     using RainbowDataAnalyzer;
 
     [TestClass]
-    public class UnitTest : CodeFixVerifier
+    public class RainbowDataAnalyzerIdsTests : DiagnosticVerifier
     {
-        
-        [TestMethod]
-        public void ShouldNotGetMessages()
-        {
-            var test = @"";
-
-            this.VerifyCSharpDiagnostic(test);
-        }
-        
         [TestMethod]
         public void ShouldGetMessageAboutId()
         {
@@ -35,27 +26,25 @@
                         }
             };
 
-            this.VerifyCSharpDiagnostic(test, expected);
-        }
-
-        [TestMethod]
-        public void ShouldGetMessageAboutPath()
-        {
-            var test = "class TestClass { string scPath = \"/sitecore/nonexistent\"; }";
-            var expected = new DiagnosticResult
-            {
-                Id = "RainbowDataAnalyzerPaths",
-                Message = "An item with path '/sitecore/nonexistent' could not be found",
-                Severity = DiagnosticSeverity.Error,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 35)
-                        }
+            var yamlContents = new[] {
+                "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent"
             };
 
-            this.VerifyCSharpDiagnostic(test, expected);
+            this.VerifyCSharpDiagnostic(test, yamlContents, expected);
         }
+        
+        [TestMethod]
+        public void ShouldNotGetMessageAboutId()
+        {
+            var test = "class TestClass { string scId = \"{0ec9e41a-0d47-47ec-a0ac-2819edb60311}\"; }";
+            
+            var yamlContents = new[] {
+                "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent"
+            };
 
+            this.VerifyCSharpDiagnostic(test, yamlContents);
+        }
+        
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new RainbowDataAnalyzerAnalyzer();

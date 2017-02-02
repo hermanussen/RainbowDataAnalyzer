@@ -118,9 +118,9 @@ namespace RainbowDataAnalyzer
                 if (Guid.TryParse(pathOrId, out valueAsId))
                 {
                     // Exclude guids that are obviously not Sitecore ID's
-                    if(context.Node.Ancestors().Any(n =>
-                            n is AttributeSyntax
-                            && nameof(Guid).Equals(((AttributeSyntax) n).Name.ToString(), StringComparison.OrdinalIgnoreCase)))
+                    if (context.Node.Ancestors().Any(n =>
+                             n is AttributeSyntax
+                             && nameof(Guid).Equals(((AttributeSyntax)n).Name.ToString(), StringComparison.OrdinalIgnoreCase)))
                     {
                         return;
                     }
@@ -166,7 +166,7 @@ namespace RainbowDataAnalyzer
         private static bool ShouldValidateAsField(SyntaxNodeAnalysisContext context)
         {
             SyntaxNode bracketsNode = context.Node.Ancestors()
-                .FirstOrDefault(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
+                .FirstOrDefault(a => a is BracketedArgumentListSyntax);
             SyntaxNode bracketsOperateOnNode = bracketsNode?.Parent.ChildNodes().First().ChildNodes()
                 .LastOrDefault(c => c is IdentifierNameSyntax) as IdentifierNameSyntax;
 
@@ -177,7 +177,7 @@ namespace RainbowDataAnalyzer
 
             if (bracketsNode?.Parent != null &&
                      sitecoreItemFullNames.Contains(
-                         context.SemanticModel.GetSymbolInfo(bracketsNode.Parent).Symbol.ContainingSymbol.ToDisplayString()))
+                         context.SemanticModel.GetSymbolInfo(bracketsNode.Parent).Symbol?.ContainingSymbol.ToDisplayString()))
             {
                 return true;
             }
