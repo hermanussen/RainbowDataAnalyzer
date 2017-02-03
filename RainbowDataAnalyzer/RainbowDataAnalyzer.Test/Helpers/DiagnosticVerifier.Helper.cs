@@ -1,16 +1,18 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-
-namespace TestHelper
+﻿namespace TestHelper
 {
+    using Microsoft.CodeAnalysis;
+    using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Text;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
+    using System.Web;
+    using System.Web.Mvc;
     using RainbowDataAnalyzer.Test.Helpers;
     using Sitecore.Data.Items;
+    using Sitecore.Mvc;
 
     /// <summary>
     /// Class for turning strings into documents and getting the diagnostics on them
@@ -23,7 +25,9 @@ namespace TestHelper
         private static readonly MetadataReference CSharpSymbolsReference = MetadataReference.CreateFromFile(typeof(CSharpCompilation).Assembly.Location);
         private static readonly MetadataReference CodeAnalysisReference = MetadataReference.CreateFromFile(typeof(Compilation).Assembly.Location);
         private static readonly MetadataReference SitecoreKernelReference = MetadataReference.CreateFromFile(typeof(Item).Assembly.Location);
-
+        private static readonly MetadataReference SystemWebReference = MetadataReference.CreateFromFile(typeof(HtmlString).Assembly.Location);
+        private static readonly MetadataReference MvcReference = MetadataReference.CreateFromFile(typeof(HtmlHelper).Assembly.Location);
+        private static readonly MetadataReference SitecoreMvcReference = MetadataReference.CreateFromFile(typeof(HtmlHelperExtensions).Assembly.Location);
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -165,7 +169,10 @@ namespace TestHelper
                 .AddMetadataReference(projectId, SystemCoreReference)
                 .AddMetadataReference(projectId, CSharpSymbolsReference)
                 .AddMetadataReference(projectId, CodeAnalysisReference)
-                .AddMetadataReference(projectId, SitecoreKernelReference);
+                .AddMetadataReference(projectId, SitecoreKernelReference)
+                .AddMetadataReference(projectId, SystemWebReference)
+                .AddMetadataReference(projectId, MvcReference)
+                .AddMetadataReference(projectId, SitecoreMvcReference);
 
             int count = 0;
             foreach (var source in sources)

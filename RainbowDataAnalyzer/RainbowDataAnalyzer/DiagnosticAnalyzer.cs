@@ -53,15 +53,8 @@ namespace RainbowDataAnalyzer
             DiagnosticSeverity.Error,
             true,
             new LocalizableResourceString(nameof(Resources.FieldPathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
-
-        /// <summary>
-        /// The names of possible Sitecore item types.
-        /// </summary>
-        private static readonly string[] sitecoreItemFullNames =
-            {
-                "Sitecore.Data.Items.BaseItem",
-                "Sitecore.Data.Items.Item"
-            };
+        
+        private static readonly string[] identifierSyntaxNames = new[] { "Item", "Fields", "Field", "BeginField" };
 
         /// <summary>
         /// The ID for the template of a template field
@@ -163,26 +156,18 @@ namespace RainbowDataAnalyzer
             }
         }
 
+        /// <summary>
+        /// Returns true if the syntax node likely refers to a field ID or path.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
         private static bool ShouldValidateAsField(SyntaxNodeAnalysisContext context)
         {
-            SyntaxNode bracketsNode = context.Node.Ancestors()
-                .FirstOrDefault(a => a is BracketedArgumentListSyntax);
-            SyntaxNode bracketsOperateOnNode = bracketsNode?.Parent.ChildNodes().First().ChildNodes()
-                .LastOrDefault(c => c is IdentifierNameSyntax) as IdentifierNameSyntax;
+            var bracketNodes = context.Node.Ancestors()
+                .Where(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
 
-            if (bracketsOperateOnNode != null && new [] { "Fields", "Field", "BeginField" }.Contains(bracketsOperateOnNode.ToString()))
-            {
-                return true;
-            }
-
-            if (bracketsNode?.Parent != null &&
-                     sitecoreItemFullNames.Contains(
-                         context.SemanticModel.GetSymbolInfo(bracketsNode.Parent).Symbol?.ContainingSymbol.ToDisplayString()))
-            {
-                return true;
-            }
-
-            return false;
+            return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
+                .LastOrDefault(c => c is IdentifierNameSyntax && identifierSyntaxNames.Contains(c.ToString())) != null);
         }
 
         /// <summary>

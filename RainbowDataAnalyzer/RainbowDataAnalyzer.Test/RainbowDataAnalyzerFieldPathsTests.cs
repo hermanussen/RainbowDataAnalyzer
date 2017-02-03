@@ -85,6 +85,30 @@
             this.VerifyCSharpDiagnostic(test, yamlContents);
         }
 
+        [TestMethod]
+        public void ShouldGetMessageAboutFieldWithHtmlHelper()
+        {
+            var test = "using Sitecore.Mvc;\r\nclass TestClass { void SomeMethod() { new System.Web.Mvc.HtmlHelper(null, null).Sitecore().Field(\"Some field that does not exist\"); } }";
+
+            var yamlContents = new[]
+                {
+                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field"
+                };
+
+            var expected = new DiagnosticResult
+            {
+                Id = "RainbowDataAnalyzerFieldPaths",
+                Message = "A valid template field with name 'Some field that does not exist' could not be found",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 2, 98)
+                        }
+            };
+
+            this.VerifyCSharpDiagnostic(test, yamlContents, expected);
+        }
+
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new RainbowDataAnalyzerAnalyzer();
