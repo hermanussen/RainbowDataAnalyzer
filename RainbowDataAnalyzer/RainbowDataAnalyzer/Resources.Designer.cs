@@ -168,5 +168,59 @@ namespace RainbowDataAnalyzer {
                 return ResourceManager.GetString("PathsAnalyzerTitle", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field that the ID refers to should be on one of the indicated templates.
+        /// </summary>
+        internal static string TemplateFieldIdsAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("TemplateFieldIdsAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on any of these templates: {1}.
+        /// </summary>
+        internal static string TemplateFieldIdsAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("TemplateFieldIdsAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field ID is not on any of the indicated templates in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string TemplateFieldIdsAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("TemplateFieldIdsAnalyzerTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field that the name refers to should be on one of the indicated templates.
+        /// </summary>
+        internal static string TemplateFieldPathsAnalyzerDescription {
+            get {
+                return ResourceManager.GetString("TemplateFieldPathsAnalyzerDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on any of these templates: {1}.
+        /// </summary>
+        internal static string TemplateFieldPathsAnalyzerMessageFormat {
+            get {
+                return ResourceManager.GetString("TemplateFieldPathsAnalyzerMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The field is not on any of the indicated templates in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string TemplateFieldPathsAnalyzerTitle {
+            get {
+                return ResourceManager.GetString("TemplateFieldPathsAnalyzerTitle", resourceCulture);
+            }
+        }
     }
 }

@@ -8,6 +8,8 @@ using System.Text;
 
 namespace TestHelper
 {
+    using System;
+
     /// <summary>
     /// Superclass of all Unit Tests for DiagnosticAnalyzers
     /// </summary>
@@ -92,6 +94,9 @@ namespace TestHelper
         /// <param name="expected">DiagnosticResults that should appear after the analyzer is run on the sources</param>
         private void VerifyDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer, string[] yamlContents, params DiagnosticResult[] expected)
         {
+            var sourcesList = sources.ToList();
+            sourcesList.Add("using Sitecore;using Sitecore.Data.Items;\r\npublic static class Utils { public static Item DerivesFrom([NotNull] this Item item, [NotNull] string templatePathOrId) { return item; } }");
+            sources = sourcesList.ToArray();
             var diagnostics = GetSortedDiagnostics(sources, language, analyzer, yamlContents);
             VerifyDiagnosticResults(diagnostics, analyzer, expected);
         }

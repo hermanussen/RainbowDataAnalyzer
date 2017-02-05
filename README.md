@@ -15,7 +15,7 @@ However, try to limit the amount of files that are included, as it may make thin
 Steps to include files:
   - Unload the project in Visual Studio
   - Edit the project file
-  - Add the following lines somewhere in the project node and change the path
+  - Add the following lines somewhere in the project node and change the path 
  ```
   <ItemGroup>
     <AdditionalFiles Include="..\Sitecore.Data\Unicorn\templates\**\*.yml">
@@ -49,7 +49,16 @@ This is a Roslyn analyzer, which means that it plugs into the compiler API's to 
 ## Future plans
 
 I'd like to add support for the following features in the future. If you have any more suggestions, please add an issue.
-  - Improve unit tests (there are already a few accurate ones)
   - Make it less strict, as there still appear to be some false positives
   - Make the severity configurable in Visual Studio
   - Find a way to track objects and verify template compatibility of field names and field id's
+  - Implement intellisense on paths and field names
+  - Implement code fix for switching between ID and Path
+  
+## Release notes
+
+1.1.0
+  - Added support for checking fields
+
+1.0.0
+  - Analyzer implemented that checks for Sitecore IDs and paths
