@@ -111,7 +111,7 @@ namespace RainbowDataAnalyzer
         {
             // Keep start time so we can determine how long this action will take
             DateTime startTime = DateTime.Now;
-            List<Guid> allowedTemplateIds;
+            string allowedTemplate;
 
             try
             {
@@ -151,9 +151,9 @@ namespace RainbowDataAnalyzer
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
                         }
-                        else if(this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplateIds))
+                        else if(this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
                         {
-                            context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldIds, context.Node.GetLocation(), pathOrId, string.Join(", ", allowedTemplateIds)));
+                            context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldIds, context.Node.GetLocation(), pathOrId, allowedTemplate));
                         }
                     }
                 }
@@ -174,9 +174,9 @@ namespace RainbowDataAnalyzer
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForFieldNames, context.Node.GetLocation(), pathOrId));
                     }
-                    else if (this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplateIds))
+                    else if (this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldNames, context.Node.GetLocation(), pathOrId, string.Join(", ", allowedTemplateIds)));
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldNames, context.Node.GetLocation(), pathOrId, allowedTemplate));
                     }
                 }
             }
@@ -186,9 +186,10 @@ namespace RainbowDataAnalyzer
             }
         }
 
-        private bool ViolatesTemplate(SyntaxNodeAnalysisContext context, Guid fieldId, out List<Guid> allowedTemplateIds)
+        private bool ViolatesTemplate(SyntaxNodeAnalysisContext context, Guid fieldId, out string allowedTemplate)
         {
-            allowedTemplateIds = new List<Guid>();
+            allowedTemplate = null;
+
             // We know that we are dealing with an existing template field; now we should find out if it can be limited to a particular template
             var method = context.Node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
             if (method == null)
@@ -197,9 +198,17 @@ namespace RainbowDataAnalyzer
             }
 
             var derives = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                .Where(i => string.Equals("DerivesFrom", i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
+                .Where(i => string.Equals("MustDeriveFrom", i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
             foreach (var derive in derives)
             {
+                // Check if it is the same object
+                if (!string.Equals(
+                    derive.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText,
+                    context.Node.Ancestors().OfType<ElementAccessExpressionSyntax>().FirstOrDefault()?.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText))
+                {
+                    continue;
+                }
+
                 string pathOrIdArg = derive.ArgumentList.Arguments.LastOrDefault()?.DescendantTokens()
                     .FirstOrDefault(t => t.Kind() == SyntaxKind.StringLiteralToken).ValueText;
                 if (!string.IsNullOrWhiteSpace(pathOrIdArg))
@@ -207,9 +216,14 @@ namespace RainbowDataAnalyzer
                     Guid templateId;
                     if (Guid.TryParse(pathOrIdArg, out templateId))
                     {
-                        if (!this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId).Contains(templateId))
+                        var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                        
+                        if (!allTemplatesForField.Select(t => t.Id).Contains(templateId))
                         {
-                            allowedTemplateIds.Add(templateId);
+                            RainbowFile matchingFile;
+                            this.Evaluate(context.Options.AdditionalFiles, file => file.Id == templateId, out matchingFile);
+
+                            allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
                             return true;
                         }
                     }
@@ -218,9 +232,11 @@ namespace RainbowDataAnalyzer
                         RainbowFile matchingFile;
                         if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrIdArg.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
                         {
-                            if (!this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId).Contains(matchingFile.Id))
+                            var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                            
+                            if (!allTemplatesForField.Select(t => t.Id).Contains(matchingFile.Id))
                             {
-                                allowedTemplateIds.Add(matchingFile.Id);
+                                allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
                                 return true;
                             }
                         }
@@ -251,9 +267,9 @@ namespace RainbowDataAnalyzer
         /// <param name="files">The files.</param>
         /// <param name="fieldId">The field identifier.</param>
         /// <returns></returns>
-        private IEnumerable<Guid> FindAllTemplatesForField(IEnumerable<AdditionalText> files, Guid fieldId)
+        private IEnumerable<RainbowFile> FindAllTemplatesForField(IEnumerable<AdditionalText> files, Guid fieldId)
         {
-            List<Guid> result = new List<Guid>();
+            List<RainbowFile> result = new List<RainbowFile>();
             lock (this.readAllFilesLock)
             {
                 RainbowFile file;
@@ -273,10 +289,10 @@ namespace RainbowDataAnalyzer
 
                 if (potentialTemplateFile != null)
                 {
-                    result.Add(potentialTemplateFile.Id);
+                    result.Add(potentialTemplateFile);
 
                     var allTemplateFiles = allRainbowFiles.Where(f => Guid.Equals(f.TemplateId, SitecoreConstants.SitecoreTemplateTemplateId)).ToList();
-                    result.AddRange(FindDerivedTemplates(allTemplateFiles, potentialTemplateFile.Id, 200));
+                    result.AddRange(FindDerivedTemplates(allTemplateFiles, potentialTemplateFile, 200));
                 }
             }
 
@@ -287,18 +303,18 @@ namespace RainbowDataAnalyzer
         /// Finds derived templates recursively.
         /// </summary>
         /// <param name="allTemplateFiles">All template files.</param>
-        /// <param name="templateId">The template ID.</param>
+        /// <param name="templateFile">The template.</param>
         /// <param name="maxDepth">The maximum depth, to prevent stack overflow if there are circular references.</param>
         /// <returns></returns>
-        private static IEnumerable<Guid> FindDerivedTemplates(List<RainbowFile> allTemplateFiles, Guid templateId, int maxDepth)
+        private static IEnumerable<RainbowFile> FindDerivedTemplates(List<RainbowFile> allTemplateFiles, RainbowFile templateFile, int maxDepth)
         {
             if (maxDepth > 0)
             {
-                foreach (Guid derivedTemplateId in allTemplateFiles.Where(t => t.BaseTemplates != null && t.BaseTemplates.Contains(templateId)).Select(t => t.Id))
+                foreach (RainbowFile derivedTemplate in allTemplateFiles.Where(t => t.BaseTemplates != null && t.BaseTemplates.Contains(templateFile.Id)))
                 {
-                    yield return derivedTemplateId;
+                    yield return derivedTemplate;
 
-                    foreach (var derived in FindDerivedTemplates(allTemplateFiles, derivedTemplateId, maxDepth - 1))
+                    foreach (var derived in FindDerivedTemplates(allTemplateFiles, derivedTemplate, maxDepth - 1))
                     {
                         yield return derived;
                     }

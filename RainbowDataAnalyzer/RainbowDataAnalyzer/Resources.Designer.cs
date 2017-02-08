@@ -179,7 +179,7 @@ namespace RainbowDataAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on any of these templates: {1}.
+        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on the template &apos;{1}&apos; or on any of its base templates.
         /// </summary>
         internal static string TemplateFieldIdsAnalyzerMessageFormat {
             get {
@@ -206,7 +206,7 @@ namespace RainbowDataAnalyzer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on any of these templates: {1}.
+        ///   Looks up a localized string similar to The field &apos;{0}&apos; is not on the template &apos;{1}&apos; or on any of its base templates.
         /// </summary>
         internal static string TemplateFieldPathsAnalyzerMessageFormat {
             get {
