@@ -6,10 +6,12 @@ namespace RainbowDataAnalyzer
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using Constants;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Rainbow;
 
     /// <summary>
     /// This Roslyn analyzer checks if Sitecore ID's and paths are valid in serialized Rainbow data.
@@ -53,18 +55,34 @@ namespace RainbowDataAnalyzer
             DiagnosticSeverity.Error,
             true,
             new LocalizableResourceString(nameof(Resources.FieldPathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
-        
-        private static readonly string[] identifierSyntaxNames = new[] { "Item", "Fields", "Field", "BeginField" };
 
-        /// <summary>
-        /// The ID for the template of a template field
-        /// </summary>
-        private static readonly Guid sitecoreTemplateFieldId = Guid.Parse("{455A3E98-A627-4B40-8035-E683A0331AC7}");
+        private static DiagnosticDescriptor RuleForTemplateFieldIds = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerTemplateFieldIds",
+            new LocalizableResourceString(nameof(Resources.TemplateFieldIdsAnalyzerTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.TemplateFieldIdsAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Error,
+            true,
+            new LocalizableResourceString(nameof(Resources.TemplateFieldIdsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
+
+        private static DiagnosticDescriptor RuleForTemplateFieldNames = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerTemplateFieldPaths",
+            new LocalizableResourceString(nameof(Resources.TemplateFieldPathsAnalyzerTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.TemplateFieldPathsAnalyzerMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Error,
+            true,
+            new LocalizableResourceString(nameof(Resources.TemplateFieldPathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
 
         /// <summary>
         /// Rainbow file hashes that can be used to keep reference to caches for already parsed files.
         /// </summary>
         private readonly Dictionary<string, int> rainbowFileHashes = new Dictionary<string, int>();
+
+        /// <summary>
+        /// The read all files lock
+        /// </summary>
+        private readonly object readAllFilesLock = new object();
 
         /// <summary>
         /// Cached versions of parsed .yml files.
@@ -74,7 +92,7 @@ namespace RainbowDataAnalyzer
         /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
         /// </summary>
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames, RuleForTemplateFieldIds, RuleForTemplateFieldNames); } }
 
         /// <summary>
         /// Called once at session start to register actions in the analysis context.
@@ -93,6 +111,7 @@ namespace RainbowDataAnalyzer
         {
             // Keep start time so we can determine how long this action will take
             DateTime startTime = DateTime.Now;
+            string allowedTemplate;
 
             try
             {
@@ -126,9 +145,16 @@ namespace RainbowDataAnalyzer
                         return;
                     }
 
-                    if (validateAsField && matchingFile.TemplateId != sitecoreTemplateFieldId)
+                    if (validateAsField)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
+                        if(matchingFile.TemplateId != SitecoreConstants.SitecoreTemplateFieldId)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
+                        }
+                        else if(this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldIds, context.Node.GetLocation(), pathOrId, allowedTemplate));
+                        }
                     }
                 }
                 else if (pathOrId.StartsWith("/sitecore/", StringComparison.OrdinalIgnoreCase))
@@ -143,10 +169,14 @@ namespace RainbowDataAnalyzer
                 else if (validateAsField && !pathOrId.Contains("/"))
                 {
                     RainbowFile matchingFile;
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => file.TemplateId == sitecoreTemplateFieldId
-                        && string.Equals(file.ItemName, pathOrId, StringComparison.OrdinalIgnoreCase), out matchingFile))
+                    if (!this.Evaluate(context.Options.AdditionalFiles, file => file.TemplateId == SitecoreConstants.SitecoreTemplateFieldId
+                                                                                && string.Equals(file.ItemName, pathOrId, StringComparison.OrdinalIgnoreCase), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForFieldNames, context.Node.GetLocation(), pathOrId));
+                    }
+                    else if (this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldNames, context.Node.GetLocation(), pathOrId, allowedTemplate));
                     }
                 }
             }
@@ -154,6 +184,67 @@ namespace RainbowDataAnalyzer
             {
                 Debug.WriteLine($"Analyzed syntax node action in {(DateTime.Now - startTime).Milliseconds}ms");
             }
+        }
+
+        private bool ViolatesTemplate(SyntaxNodeAnalysisContext context, Guid fieldId, out string allowedTemplate)
+        {
+            allowedTemplate = null;
+
+            // We know that we are dealing with an existing template field; now we should find out if it can be limited to a particular template
+            var method = context.Node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+            if (method == null)
+            {
+                return false;
+            }
+
+            var derives = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+                .Where(i => string.Equals("MustDeriveFrom", i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
+            foreach (var derive in derives)
+            {
+                // Check if it is the same object
+                if (!string.Equals(
+                    derive.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText,
+                    context.Node.Ancestors().OfType<ElementAccessExpressionSyntax>().FirstOrDefault()?.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText))
+                {
+                    continue;
+                }
+
+                string pathOrIdArg = derive.ArgumentList.Arguments.LastOrDefault()?.DescendantTokens()
+                    .FirstOrDefault(t => t.Kind() == SyntaxKind.StringLiteralToken).ValueText;
+                if (!string.IsNullOrWhiteSpace(pathOrIdArg))
+                {
+                    Guid templateId;
+                    if (Guid.TryParse(pathOrIdArg, out templateId))
+                    {
+                        var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                        
+                        if (!allTemplatesForField.Select(t => t.Id).Contains(templateId))
+                        {
+                            RainbowFile matchingFile;
+                            this.Evaluate(context.Options.AdditionalFiles, file => file.Id == templateId, out matchingFile);
+
+                            allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
+                            return true;
+                        }
+                    }
+                    else if (pathOrIdArg.StartsWith("/sitecore/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RainbowFile matchingFile;
+                        if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrIdArg.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
+                        {
+                            var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                            
+                            if (!allTemplatesForField.Select(t => t.Id).Contains(matchingFile.Id))
+                            {
+                                allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -167,7 +258,68 @@ namespace RainbowDataAnalyzer
                 .Where(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
 
             return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
-                .LastOrDefault(c => c is IdentifierNameSyntax && identifierSyntaxNames.Contains(c.ToString())) != null);
+                .LastOrDefault(c => c is IdentifierNameSyntax && SitecoreConstants.IdentifierSyntaxNames.Contains(c.ToString())) != null);
+        }
+
+        /// <summary>
+        /// Finds all templates for a field ID.
+        /// </summary>
+        /// <param name="files">The files.</param>
+        /// <param name="fieldId">The field identifier.</param>
+        /// <returns></returns>
+        private IEnumerable<RainbowFile> FindAllTemplatesForField(IEnumerable<AdditionalText> files, Guid fieldId)
+        {
+            List<RainbowFile> result = new List<RainbowFile>();
+            lock (this.readAllFilesLock)
+            {
+                RainbowFile file;
+                this.Evaluate(files, null, out file);
+
+                var allRainbowFiles = this.rainbowFiles.Values;
+                RainbowFile potentialTemplateFile = allRainbowFiles.FirstOrDefault(f => Guid.Equals(f.Id, fieldId));
+                while (potentialTemplateFile != null)
+                {
+                    if (Guid.Equals(potentialTemplateFile.TemplateId, SitecoreConstants.SitecoreTemplateTemplateId))
+                    {
+                        break;
+                    }
+
+                    potentialTemplateFile = allRainbowFiles.FirstOrDefault(f => Guid.Equals(f.Id, potentialTemplateFile.ParentId));
+                }
+
+                if (potentialTemplateFile != null)
+                {
+                    result.Add(potentialTemplateFile);
+
+                    var allTemplateFiles = allRainbowFiles.Where(f => Guid.Equals(f.TemplateId, SitecoreConstants.SitecoreTemplateTemplateId)).ToList();
+                    result.AddRange(FindDerivedTemplates(allTemplateFiles, potentialTemplateFile, 200));
+                }
+            }
+
+            return result.Distinct();
+        }
+
+        /// <summary>
+        /// Finds derived templates recursively.
+        /// </summary>
+        /// <param name="allTemplateFiles">All template files.</param>
+        /// <param name="templateFile">The template.</param>
+        /// <param name="maxDepth">The maximum depth, to prevent stack overflow if there are circular references.</param>
+        /// <returns></returns>
+        private static IEnumerable<RainbowFile> FindDerivedTemplates(List<RainbowFile> allTemplateFiles, RainbowFile templateFile, int maxDepth)
+        {
+            if (maxDepth > 0)
+            {
+                foreach (RainbowFile derivedTemplate in allTemplateFiles.Where(t => t.BaseTemplates != null && t.BaseTemplates.Contains(templateFile.Id)))
+                {
+                    yield return derivedTemplate;
+
+                    foreach (var derived in FindDerivedTemplates(allTemplateFiles, derivedTemplate, maxDepth - 1))
+                    {
+                        yield return derived;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -199,7 +351,7 @@ namespace RainbowDataAnalyzer
                         {
                             // Update the cache
                             this.rainbowFileHashes[text.Path] = text.GetHashCode();
-                            file = this.ParseRainbowFile(text);
+                            file = RainbowParserUtil.ParseRainbowFile(text);
                             this.rainbowFiles[text.Path] = file;
                         }
                     }
@@ -207,13 +359,13 @@ namespace RainbowDataAnalyzer
                     {
                         // Parse the file and add it to the cache
                         this.rainbowFileHashes.Add(text.Path, text.GetHashCode());
-                        file = this.ParseRainbowFile(text);
+                        file = RainbowParserUtil.ParseRainbowFile(text);
                         this.rainbowFiles.Add(text.Path, file);
                     }
                 }
 
                 // Only stop evaluating if something matches
-                if (evaluateFunction(file))
+                if (evaluateFunction != null && evaluateFunction(file))
                 {
                     matchingFile = file;
                     return true;
@@ -222,49 +374,5 @@ namespace RainbowDataAnalyzer
 
             return false;
         }
-
-        /// <summary>
-        /// Parses the rainbow (.yml) file.
-        /// </summary>
-        /// <param name="text">The text of the .yml file.</param>
-        /// <returns></returns>
-        private RainbowFile ParseRainbowFile(AdditionalText text)
-        {
-            const string idParseKey = "ID: ";
-            const string pathParseKey = "Path: ";
-            const string templateParseKey = "Template: ";
-
-            var textLines = text.GetText().ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            if (textLines.Any())
-            {
-                var result = new RainbowFile();
-
-                string textLineId = textLines.FirstOrDefault(l => l.StartsWith(idParseKey));
-                Guid idGuid;
-                if (textLineId != null && Guid.TryParse(textLineId.Substring(idParseKey.Length).Trim(' ', '"'), out idGuid))
-                {
-                    result.Id = idGuid;
-                }
-
-                var textLinePath = textLines.FirstOrDefault(l => l.StartsWith(pathParseKey));
-                if (textLinePath != null)
-                {
-                    result.Path = textLinePath.Substring(pathParseKey.Length).Trim();
-                }
-
-                string textLineTemplate = textLines.FirstOrDefault(l => l.StartsWith(templateParseKey));
-                Guid templateGuid;
-                if (textLineTemplate != null && Guid.TryParse(textLineTemplate.Substring(templateParseKey.Length).Trim(' ', '"'), out templateGuid))
-                {
-                    result.TemplateId = templateGuid;
-                }
-
-                return result;
-            }
-
-            // Not a valid result, but return an empty object anyway so it won't have to be parsed more often
-            return new RainbowFile();
-        }
-
     }
 }

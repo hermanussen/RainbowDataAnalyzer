@@ -140,10 +140,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\AnalyzerAdditionalFile.cs" />
+    <Compile Include="RainbowDataAnalyzerTemplateFieldPathsTests.cs" />
     <Compile Include="RainbowDataAnalyzerFieldPathsTests.cs" />
     <Compile Include="RainbowDataAnalyzerFieldIdsTests.cs" />
     <Compile Include="RainbowDataAnalyzerTests.cs" />
     <Compile Include="RainbowDataAnalyzerPathsTests.cs" />
+    <Compile Include="Rainbow\RainbowParserUtilTests.cs" />
     <Compile Include="Verifiers\DiagnosticVerifier.cs" />
     <Compile Include="Helpers\DiagnosticResult.cs" />
     <Compile Include="Helpers\DiagnosticVerifier.Helper.cs" />

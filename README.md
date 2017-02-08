@@ -15,7 +15,7 @@ However, try to limit the amount of files that are included, as it may make thin
 Steps to include files:
   - Unload the project in Visual Studio
   - Edit the project file
-  - Add the following lines somewhere in the project node and change the path
+  - Add the following lines somewhere in the project node and change the path 
  ```
   <ItemGroup>
     <AdditionalFiles Include="..\Sitecore.Data\Unicorn\templates\**\*.yml">
@@ -46,10 +46,26 @@ This is a Roslyn analyzer, which means that it plugs into the compiler API's to 
 - If the string or ID refers to a field, we will check if it can be found in the serialized data as well
 - Especially if you use [precompiled views](http://kamsar.net/index.php/2016/09/Precompiled-Views-with-Sitecore-8-2/), the @Html.Sitecore().Field(...) syntax is also validated.
 
+Furthermore, if you follow the following rules, the analyzer will also check if the fields that are being used are on the right template.
+- The field needs to be on an item which is assigned to a variable
+- You need to call an extension method on that variable (which can have any implementation you want; it can also be empty) with the following signature: `public static void MustDeriveFrom([NotNull] this Item item, [NotNull] string templatePathOrId)`
+- The call to `MustDeriveFrom(...)` and the accessing of a field must be within the same method (which may also be a Razor View)
+
 ## Future plans
 
 I'd like to add support for the following features in the future. If you have any more suggestions, please add an issue.
-  - Improve unit tests (there are already a few accurate ones)
   - Make it less strict, as there still appear to be some false positives
   - Make the severity configurable in Visual Studio
-  - Find a way to track objects and verify template compatibility of field names and field id's
+  - Implement intellisense on paths and field names
+  - Implement code fix for switching between ID and Path
+  
+## Release notes
+
+1.2.0
+  - Field names and IDs can now also be checked to be on the correct template
+
+1.1.0
+  - Added support for checking fields
+
+1.0.0
+  - Analyzer implemented that checks for Sitecore IDs and paths

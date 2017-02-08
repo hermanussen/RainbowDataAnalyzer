@@ -153,4 +153,22 @@
   <data name="PathsAnalyzerTitle" xml:space="preserve">
     <value>Sitecore path could not be found in Rainbow (Unicorn) data</value>
   </data>
+  <data name="TemplateFieldIdsAnalyzerDescription" xml:space="preserve">
+    <value>The field that the ID refers to should be on one of the indicated templates</value>
+  </data>
+  <data name="TemplateFieldIdsAnalyzerMessageFormat" xml:space="preserve">
+    <value>The field '{0}' is not on the template '{1}' or on any of its base templates</value>
+  </data>
+  <data name="TemplateFieldIdsAnalyzerTitle" xml:space="preserve">
+    <value>The field ID is not on any of the indicated templates in Rainbow (Unicorn) data</value>
+  </data>
+  <data name="TemplateFieldPathsAnalyzerDescription" xml:space="preserve">
+    <value>The field that the name refers to should be on one of the indicated templates</value>
+  </data>
+  <data name="TemplateFieldPathsAnalyzerMessageFormat" xml:space="preserve">
+    <value>The field '{0}' is not on the template '{1}' or on any of its base templates</value>
+  </data>
+  <data name="TemplateFieldPathsAnalyzerTitle" xml:space="preserve">
+    <value>The field is not on any of the indicated templates in Rainbow (Unicorn) data</value>
+  </data>
 </root>
