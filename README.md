@@ -51,11 +51,15 @@ Furthermore, if you follow the following rules, the analyzer will also check if 
 - You need to call an extension method on that variable (which can have any implementation you want; it can also be empty) with the following signature: `public static void MustDeriveFrom([NotNull] this Item item, [NotNull] string templatePathOrId)`
 - The call to `MustDeriveFrom(...)` and the accessing of a field must be within the same method (which may also be a Razor View)
 
+If you want to change the severity of the checks (e.g.: make something a `warning` instead of an `error`), you can do this for individual projects in Visual Studio:
+- Expand the project's references
+- Right click `Analyzers` and click `Open Active Ruleset`
+- Now change the settings for the `RainbowDataAnalyzer` rules
+
 ## Future plans
 
 I'd like to add support for the following features in the future. If you have any more suggestions, please add an issue.
   - Make it less strict, as there still appear to be some false positives
-  - Make the severity configurable in Visual Studio
   - Implement intellisense on paths and field names
   - Implement code fix for switching between ID and Path
   
