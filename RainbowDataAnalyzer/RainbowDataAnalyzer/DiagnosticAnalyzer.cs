@@ -74,6 +74,24 @@ namespace RainbowDataAnalyzer
             true,
             new LocalizableResourceString(nameof(Resources.TemplateFieldPathsAnalyzerDescription), Resources.ResourceManager, typeof(Resources)));
 
+        private static DiagnosticDescriptor RuleForInfoIdToPath = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerIdToPath",
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerIdToPathTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerIdToPathMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Info,
+            true,
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerIdToPathDescription), Resources.ResourceManager, typeof(Resources)));
+
+        private static DiagnosticDescriptor RuleForInfoPathToId = new DiagnosticDescriptor(
+            "RainbowDataAnalyzerPathToId",
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerPathToIdTitle), Resources.ResourceManager, typeof(Resources)),
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerPathToIdMessageFormat), Resources.ResourceManager, typeof(Resources)),
+            "Sitecore",
+            DiagnosticSeverity.Info,
+            true,
+            new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerPathToIdDescription), Resources.ResourceManager, typeof(Resources)));
+
         /// <summary>
         /// Rainbow file hashes that can be used to keep reference to caches for already parsed files.
         /// </summary>
@@ -101,7 +119,7 @@ namespace RainbowDataAnalyzer
         /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
         /// </summary>
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames, RuleForTemplateFieldIds, RuleForTemplateFieldNames); } }
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames, RuleForTemplateFieldIds, RuleForTemplateFieldNames, RuleForInfoIdToPath, RuleForInfoPathToId); } }
 
         /// <summary>
         /// Called once at session start to register actions in the analysis context.
@@ -154,16 +172,25 @@ namespace RainbowDataAnalyzer
                         return;
                     }
 
+                    bool reportInfo = true;
                     if (validateAsField)
                     {
                         if(matchingFile.TemplateId != SitecoreConstants.SitecoreTemplateFieldId)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
+                            reportInfo = false; // there is already something reported
                         }
                         else if(this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldIds, context.Node.GetLocation(), pathOrId, allowedTemplate));
+                            reportInfo = false; // there is already something reported
                         }
+                    }
+
+                    if (reportInfo)
+                    {
+                        // The item was found; offer a hint to the path
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForInfoIdToPath, context.Node.GetLocation(), matchingFile.Path));
                     }
                 }
                 else if (pathOrId.StartsWith("/sitecore/", StringComparison.OrdinalIgnoreCase))
@@ -173,6 +200,11 @@ namespace RainbowDataAnalyzer
                     if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrId.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForPaths, context.Node.GetLocation(), pathOrId));
+                    }
+                    else
+                    {
+                        // The item was found; offer a hint to the ID
+                        context.ReportDiagnostic(Diagnostic.Create(RuleForInfoPathToId, context.Node.GetLocation(), matchingFile.Id));
                     }
                 }
                 else if (validateAsField && !pathOrId.Contains("/"))

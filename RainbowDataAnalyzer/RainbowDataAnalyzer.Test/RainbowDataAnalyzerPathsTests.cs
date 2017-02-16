@@ -41,8 +41,19 @@
             var yamlContents = new string[] {
                 "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent"
             };
+            
+            var expected = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerPathToId",
+                    Message = "The path corresponds with ID '0ec9e41a-0d47-47ec-a0ac-2819edb60311'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                            new[] {
+                                    new DiagnosticResultLocation("Test0.cs", 11, 35)
+                                }
+                };
 
-            this.VerifyCSharpDiagnostic(test, yamlContents);
+            this.VerifyCSharpDiagnostic(test, yamlContents, expected);
         }
         
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

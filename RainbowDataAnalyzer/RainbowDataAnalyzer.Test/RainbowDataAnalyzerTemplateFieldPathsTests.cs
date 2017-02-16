@@ -14,16 +14,27 @@
         [TestMethod]
         public void AnimalsDoNotHaveSteeringWheels()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                        new[] {
+                                                new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                            }
+                };
+
             var expected = new DiagnosticResult
-            {
-                Id = "RainbowDataAnalyzerTemplateFieldPaths",
-                Message = "The field 'Steering wheel' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
-                Severity = DiagnosticSeverity.Error,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 2, 152)
-                        }
-            };
+                {
+                    Id = "RainbowDataAnalyzerTemplateFieldPaths",
+                    Message = "The field 'Steering wheel' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations =
+                        new[] {
+                                new DiagnosticResultLocation("Test0.cs", 2, 152)
+                            }
+                };
             
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
@@ -32,22 +43,33 @@
                 "Steering wheel",
                 "\"]; } }");
 
-            this.ExecuteTest(source, expected);
+            this.ExecuteTest(source, expectedInfo, expected);
         }
 
         [TestMethod]
         public void AnimalsDoNotHaveSteeringWheelsWithItem()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                            new[] {
+                                                    new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                                }
+                };
+
             var expected = new DiagnosticResult
-            {
-                Id = "RainbowDataAnalyzerTemplateFieldPaths",
-                Message = "The field 'Steering wheel' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
-                Severity = DiagnosticSeverity.Error,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 2, 145)
-                        }
-            };
+                {
+                    Id = "RainbowDataAnalyzerTemplateFieldPaths",
+                    Message = "The field 'Steering wheel' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations =
+                        new[] {
+                                new DiagnosticResultLocation("Test0.cs", 2, 145)
+                            }
+                };
 
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
@@ -56,12 +78,23 @@
                 "Steering wheel",
                 "\"]; } }");
 
-            this.ExecuteTest(source, expected);
+            this.ExecuteTest(source, expectedInfo, expected);
         }
 
         [TestMethod]
         public void AnimalsHaveFoodThatTheyLike()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                            new[] {
+                                                    new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                                }
+                };
+
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
                 "f5cfa142-fd92-4cdc-a6d5-c20020398418",
@@ -69,12 +102,23 @@
                 "Food that it likes",
                 "\"]; } }");
 
-            this.ExecuteTest(source);
+            this.ExecuteTest(source, expectedInfo);
         }
 
         [TestMethod]
         public void AnimalsDoNotAlwaysHaveCatHair()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                        new[] {
+                                                new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                            }
+                };
+
             var expected = new DiagnosticResult
                 {
                     Id = "RainbowDataAnalyzerTemplateFieldPaths",
@@ -93,22 +137,33 @@
                 "Cat hair",
                 "\"]; } }");
 
-            this.ExecuteTest(source, expected);
+            this.ExecuteTest(source, expectedInfo, expected);
         }
         
         [TestMethod]
         public void AnimalsAndOtherOrganismsDoNotAlwaysHaveCatHair()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                    new[] {
+                                            new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                        }
+                };
+
             var expected = new DiagnosticResult
-            {
-                Id = "RainbowDataAnalyzerTemplateFieldPaths",
-                Message = "The field 'Cat hair' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
-                Severity = DiagnosticSeverity.Error,
-                Locations =
-                        new[] {
-                                new DiagnosticResultLocation("Test0.cs", 2, 152)
-                            }
-            };
+                {
+                    Id = "RainbowDataAnalyzerTemplateFieldPaths",
+                    Message = "The field 'Cat hair' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations =
+                            new[] {
+                                    new DiagnosticResultLocation("Test0.cs", 2, 152)
+                                }
+                };
 
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
@@ -117,12 +172,23 @@
                 "Cat hair",
                 "\"]; } }");
 
-            this.ExecuteTest(source, expected);
+            this.ExecuteTest(source, expectedInfo, expected);
         }
 
         [TestMethod]
         public void CatsHaveFoodThatTheyLike()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Cat template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                            new[] {
+                                                    new DiagnosticResultLocation("Test0.cs", 11, 92)
+                                                }
+                };
+
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
                 "05cfa142-fd92-4cdc-a6d5-c20020398418",
@@ -130,12 +196,23 @@
                 "Food that it likes",
                 "\"]; } }");
 
-            this.ExecuteTest(source);
+            this.ExecuteTest(source, expectedInfo);
         }
 
         [TestMethod]
         public void AnimalsDoNotHaveSteeringWheelsButThatIsNotWhatIsBeingChecked()
         {
+            var expectedInfo = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                                        new[] {
+                                                new DiagnosticResultLocation("Test0.cs", 11, 145)
+                                            }
+                };
+
             string source = string.Concat(
                 "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;var item2 = Sitecore.Context.Database.GetRootItem();item2.MustDeriveFrom(\"",
                 "f5cfa142-fd92-4cdc-a6d5-c20020398418",
@@ -143,7 +220,7 @@
                 "Steering wheel",
                 "\"]; } }");
 
-            this.ExecuteTest(source);
+            this.ExecuteTest(source, expectedInfo);
         }
 
         private void ExecuteTest(string source, params DiagnosticResult[] expected)

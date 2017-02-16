@@ -42,8 +42,19 @@
             var yamlContents = new string[] {
                 "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
             };
+            
+            var expected = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/existent'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                        new[] {
+                                new DiagnosticResultLocation("Test0.cs", 11, 97)
+                            }
+                };
 
-            this.VerifyCSharpDiagnostic(test, yamlContents);
+            this.VerifyCSharpDiagnostic(test, yamlContents, expected);
         }
 
         [TestMethod]
@@ -77,8 +88,19 @@
             var yamlContents = new string[] {
                 "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/existent\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
             };
+            
+            var expected = new DiagnosticResult
+                {
+                    Id = "RainbowDataAnalyzerIdToPath",
+                    Message = "The ID corresponds with path '/sitecore/existent'",
+                    Severity = DiagnosticSeverity.Info,
+                    Locations =
+                            new[] {
+                                    new DiagnosticResultLocation("Test0.cs", 11, 90)
+                                }
+                };
 
-            this.VerifyCSharpDiagnostic(test, yamlContents);
+            this.VerifyCSharpDiagnostic(test, yamlContents, expected);
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()

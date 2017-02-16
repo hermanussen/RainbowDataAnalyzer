@@ -170,6 +170,60 @@ namespace RainbowDataAnalyzer {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The ID was found in Rainbow (Unicorn) data on disk.
+        /// </summary>
+        internal static string RainbowDataAnalyzerIdToPathDescription {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerIdToPathDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The ID corresponds with path &apos;{0}&apos;.
+        /// </summary>
+        internal static string RainbowDataAnalyzerIdToPathMessageFormat {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerIdToPathMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The ID was found in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string RainbowDataAnalyzerIdToPathTitle {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerIdToPathTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The path was found in Rainbow (Unicorn) data on disk.
+        /// </summary>
+        internal static string RainbowDataAnalyzerPathToIdDescription {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerPathToIdDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The path corresponds with ID &apos;{0}&apos;.
+        /// </summary>
+        internal static string RainbowDataAnalyzerPathToIdMessageFormat {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerPathToIdMessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The path was found in Rainbow (Unicorn) data.
+        /// </summary>
+        internal static string RainbowDataAnalyzerPathToIdTitle {
+            get {
+                return ResourceManager.GetString("RainbowDataAnalyzerPathToIdTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The field that the ID refers to should be on one of the indicated templates.
         /// </summary>
         internal static string TemplateFieldIdsAnalyzerDescription {

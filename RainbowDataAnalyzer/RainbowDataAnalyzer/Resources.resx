@@ -153,6 +153,24 @@
   <data name="PathsAnalyzerTitle" xml:space="preserve">
     <value>Sitecore path could not be found in Rainbow (Unicorn) data</value>
   </data>
+  <data name="RainbowDataAnalyzerIdToPathDescription" xml:space="preserve">
+    <value>The ID was found in Rainbow (Unicorn) data on disk</value>
+  </data>
+  <data name="RainbowDataAnalyzerIdToPathMessageFormat" xml:space="preserve">
+    <value>The ID corresponds with path '{0}'</value>
+  </data>
+  <data name="RainbowDataAnalyzerIdToPathTitle" xml:space="preserve">
+    <value>The ID was found in Rainbow (Unicorn) data</value>
+  </data>
+  <data name="RainbowDataAnalyzerPathToIdDescription" xml:space="preserve">
+    <value>The path was found in Rainbow (Unicorn) data on disk</value>
+  </data>
+  <data name="RainbowDataAnalyzerPathToIdMessageFormat" xml:space="preserve">
+    <value>The path corresponds with ID '{0}'</value>
+  </data>
+  <data name="RainbowDataAnalyzerPathToIdTitle" xml:space="preserve">
+    <value>The path was found in Rainbow (Unicorn) data</value>
+  </data>
   <data name="TemplateFieldIdsAnalyzerDescription" xml:space="preserve">
     <value>The field that the ID refers to should be on one of the indicated templates</value>
   </data>
