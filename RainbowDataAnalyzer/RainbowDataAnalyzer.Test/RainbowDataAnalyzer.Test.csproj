@@ -140,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers\AnalyzerAdditionalFile.cs" />
+    <Compile Include="RainbowDataAnalyzerTemplateFieldIdsTests.cs" />
     <Compile Include="RainbowDataAnalyzerTemplateFieldPathsTests.cs" />
     <Compile Include="RainbowDataAnalyzerFieldPathsTests.cs" />
     <Compile Include="RainbowDataAnalyzerFieldIdsTests.cs" />
