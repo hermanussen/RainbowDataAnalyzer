@@ -60,8 +60,10 @@ If you want to change the severity of the checks (e.g.: make something a `warnin
 
 I'd like to add support for the following features in the future. If you have any more suggestions, please add an issue.
   - Make it less strict, as there still appear to be some false positives
-  - Implement intellisense on paths and field names
+  - Implement intellisense on paths and field names (some work on this in branch `intellisense-paths-and-fields`, but currently stopped because [Visual Studio does not do completion inside string literals](http://stackoverflow.com/questions/31096360/how-to-auto-complete-string-literal-in-visual-studio))
   - Implement code fix for switching between ID and Path
+  - Make field on template checking more context aware for Razor views (e.g.: check context model)
+  - Add support for Glass Mapper, Synthesis and Fortis model checking
   
 ## Release notes
 

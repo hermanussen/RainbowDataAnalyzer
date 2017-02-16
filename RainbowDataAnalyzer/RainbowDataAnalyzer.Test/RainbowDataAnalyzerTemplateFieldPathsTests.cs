@@ -36,6 +36,30 @@
         }
 
         [TestMethod]
+        public void AnimalsDoNotHaveSteeringWheelsWithItem()
+        {
+            var expected = new DiagnosticResult
+            {
+                Id = "RainbowDataAnalyzerTemplateFieldPaths",
+                Message = "The field 'Steering wheel' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                    new[] {
+                            new DiagnosticResultLocation("Test0.cs", 2, 145)
+                        }
+            };
+
+            string source = string.Concat(
+                "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item.MustDeriveFrom(\"",
+                "f5cfa142-fd92-4cdc-a6d5-c20020398418",
+                "\");var a = item[\"",
+                "Steering wheel",
+                "\"]; } }");
+
+            this.ExecuteTest(source, expected);
+        }
+
+        [TestMethod]
         public void AnimalsHaveFoodThatTheyLike()
         {
             string source = string.Concat(

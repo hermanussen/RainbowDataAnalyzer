@@ -88,6 +88,15 @@ namespace RainbowDataAnalyzer
         /// Cached versions of parsed .yml files.
         /// </summary>
         private readonly Dictionary<string, RainbowFile> rainbowFiles = new Dictionary<string, RainbowFile>();
+        
+        /// <summary>
+        /// The names of possible Sitecore item types.
+        /// </summary>
+        private static readonly string[] sitecoreItemFullNames =
+            {
+                "Sitecore.Data.Items.BaseItem",
+                "Sitecore.Data.Items.Item"
+            };
 
         /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
@@ -256,6 +265,12 @@ namespace RainbowDataAnalyzer
         {
             var bracketNodes = context.Node.Ancestors()
                 .Where(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
+            
+            if (bracketNodes.Select(b => b.Parent).OfType<ElementAccessExpressionSyntax>()
+                    .Any(e => sitecoreItemFullNames.Contains(context.SemanticModel.GetSymbolInfo(e).Symbol?.ContainingSymbol.ToDisplayString())))
+            {
+                return true;
+            }
 
             return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
                 .LastOrDefault(c => c is IdentifierNameSyntax && SitecoreConstants.IdentifierSyntaxNames.Contains(c.ToString())) != null);
