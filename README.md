@@ -67,6 +67,10 @@ I'd like to add support for the following features in the future. If you have an
   
 ## Release notes
 
+1.3.0
+  - Minor bugfixes
+  - Added quick info tooltips that show the Sitecore id/path
+
 1.2.0
   - Field names and IDs can now also be checked to be on the correct template
 

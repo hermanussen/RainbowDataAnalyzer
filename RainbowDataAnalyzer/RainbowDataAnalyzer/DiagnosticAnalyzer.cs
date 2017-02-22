@@ -91,21 +91,6 @@ namespace RainbowDataAnalyzer
             DiagnosticSeverity.Info,
             true,
             new LocalizableResourceString(nameof(Resources.RainbowDataAnalyzerPathToIdDescription), Resources.ResourceManager, typeof(Resources)));
-
-        /// <summary>
-        /// Rainbow file hashes that can be used to keep reference to caches for already parsed files.
-        /// </summary>
-        private readonly Dictionary<string, int> rainbowFileHashes = new Dictionary<string, int>();
-
-        /// <summary>
-        /// The read all files lock
-        /// </summary>
-        private readonly object readAllFilesLock = new object();
-
-        /// <summary>
-        /// Cached versions of parsed .yml files.
-        /// </summary>
-        private readonly Dictionary<string, RainbowFile> rainbowFiles = new Dictionary<string, RainbowFile>();
         
         /// <summary>
         /// The names of possible Sitecore item types.
@@ -166,7 +151,7 @@ namespace RainbowDataAnalyzer
 
                     // All guids are regarded as Sitecore ID's and will be checked
                     RainbowFile matchingFile;
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => Guid.Equals(file.Id, valueAsId), out matchingFile))
+                    if (!Repository.Evaluate(context.Options.AdditionalFiles, file => Guid.Equals(file.Id, valueAsId), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForIds, context.Node.GetLocation(), pathOrId));
                         return;
@@ -197,7 +182,7 @@ namespace RainbowDataAnalyzer
                 {
                     // All paths that start with /sitecore/ are regarded as Sitecore paths and will be checked
                     RainbowFile matchingFile;
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrId.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
+                    if (!Repository.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrId.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForPaths, context.Node.GetLocation(), pathOrId));
                     }
@@ -210,7 +195,7 @@ namespace RainbowDataAnalyzer
                 else if (validateAsField && !pathOrId.Contains("/"))
                 {
                     RainbowFile matchingFile;
-                    if (!this.Evaluate(context.Options.AdditionalFiles, file => file.TemplateId == SitecoreConstants.SitecoreTemplateFieldId
+                    if (!Repository.Evaluate(context.Options.AdditionalFiles, file => file.TemplateId == SitecoreConstants.SitecoreTemplateFieldId
                                                                                 && string.Equals(file.ItemName, pathOrId, StringComparison.OrdinalIgnoreCase), out matchingFile))
                     {
                         context.ReportDiagnostic(Diagnostic.Create(RuleForFieldNames, context.Node.GetLocation(), pathOrId));
@@ -257,12 +242,12 @@ namespace RainbowDataAnalyzer
                     Guid templateId;
                     if (Guid.TryParse(pathOrIdArg, out templateId))
                     {
-                        var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                        var allTemplatesForField = Repository.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
                         
                         if (!allTemplatesForField.Select(t => t.Id).Contains(templateId))
                         {
                             RainbowFile matchingFile;
-                            this.Evaluate(context.Options.AdditionalFiles, file => file.Id == templateId, out matchingFile);
+                            Repository.Evaluate(context.Options.AdditionalFiles, file => file.Id == templateId, out matchingFile);
 
                             allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
                             return true;
@@ -271,9 +256,9 @@ namespace RainbowDataAnalyzer
                     else if (pathOrIdArg.StartsWith("/sitecore/", StringComparison.OrdinalIgnoreCase))
                     {
                         RainbowFile matchingFile;
-                        if (!this.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrIdArg.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
+                        if (!Repository.Evaluate(context.Options.AdditionalFiles, file => string.Equals(file.Path, pathOrIdArg.TrimEnd('/'), StringComparison.OrdinalIgnoreCase), out matchingFile))
                         {
-                            var allTemplatesForField = this.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+                            var allTemplatesForField = Repository.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
                             
                             if (!allTemplatesForField.Select(t => t.Id).Contains(matchingFile.Id))
                             {
@@ -306,120 +291,6 @@ namespace RainbowDataAnalyzer
 
             return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
                 .LastOrDefault(c => c is IdentifierNameSyntax && SitecoreConstants.IdentifierSyntaxNames.Contains(c.ToString())) != null);
-        }
-
-        /// <summary>
-        /// Finds all templates for a field ID.
-        /// </summary>
-        /// <param name="files">The files.</param>
-        /// <param name="fieldId">The field identifier.</param>
-        /// <returns></returns>
-        private IEnumerable<RainbowFile> FindAllTemplatesForField(IEnumerable<AdditionalText> files, Guid fieldId)
-        {
-            List<RainbowFile> result = new List<RainbowFile>();
-            lock (this.readAllFilesLock)
-            {
-                RainbowFile file;
-                this.Evaluate(files, null, out file);
-
-                var allRainbowFiles = this.rainbowFiles.Values;
-                RainbowFile potentialTemplateFile = allRainbowFiles.FirstOrDefault(f => Guid.Equals(f.Id, fieldId));
-                while (potentialTemplateFile != null)
-                {
-                    if (Guid.Equals(potentialTemplateFile.TemplateId, SitecoreConstants.SitecoreTemplateTemplateId))
-                    {
-                        break;
-                    }
-
-                    potentialTemplateFile = allRainbowFiles.FirstOrDefault(f => Guid.Equals(f.Id, potentialTemplateFile.ParentId));
-                }
-
-                if (potentialTemplateFile != null)
-                {
-                    result.Add(potentialTemplateFile);
-
-                    var allTemplateFiles = allRainbowFiles.Where(f => Guid.Equals(f.TemplateId, SitecoreConstants.SitecoreTemplateTemplateId)).ToList();
-                    result.AddRange(FindDerivedTemplates(allTemplateFiles, potentialTemplateFile, 200));
-                }
-            }
-
-            return result.Distinct();
-        }
-
-        /// <summary>
-        /// Finds derived templates recursively.
-        /// </summary>
-        /// <param name="allTemplateFiles">All template files.</param>
-        /// <param name="templateFile">The template.</param>
-        /// <param name="maxDepth">The maximum depth, to prevent stack overflow if there are circular references.</param>
-        /// <returns></returns>
-        private static IEnumerable<RainbowFile> FindDerivedTemplates(List<RainbowFile> allTemplateFiles, RainbowFile templateFile, int maxDepth)
-        {
-            if (maxDepth > 0)
-            {
-                foreach (RainbowFile derivedTemplate in allTemplateFiles.Where(t => t.BaseTemplates != null && t.BaseTemplates.Contains(templateFile.Id)))
-                {
-                    yield return derivedTemplate;
-
-                    foreach (var derived in FindDerivedTemplates(allTemplateFiles, derivedTemplate, maxDepth - 1))
-                    {
-                        yield return derived;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Evaluates if any of the .yml files match the specified function.
-        /// </summary>
-        /// <param name="files">The .yml files.</param>
-        /// <param name="evaluateFunction">The evaluation function.</param>
-        /// <param name="matchingFile">The matching file.</param>
-        /// <returns></returns>
-        private bool Evaluate(IEnumerable<AdditionalText> files, Func<RainbowFile, bool> evaluateFunction, out RainbowFile matchingFile)
-        {
-            matchingFile = null;
-            foreach (AdditionalText text in files)
-            {
-                RainbowFile file;
-
-                // This code will probably not run in parallel, but ensure that the dictionaries remain in sync just in case
-                lock (this.rainbowFileHashes)
-                {
-                    if (this.rainbowFileHashes.ContainsKey(text.Path))
-                    {
-                        // We have already parsed this file, so check if our cache is up to date
-                        if (this.rainbowFileHashes[text.Path] == text.GetHashCode())
-                        {
-                            // The cache is up to date, so use the cached version
-                            file = this.rainbowFiles[text.Path];
-                        }
-                        else
-                        {
-                            // Update the cache
-                            this.rainbowFileHashes[text.Path] = text.GetHashCode();
-                            file = RainbowParserUtil.ParseRainbowFile(text);
-                            this.rainbowFiles[text.Path] = file;
-                        }
-                    }
-                    else
-                    {
-                        // Parse the file and add it to the cache
-                        this.rainbowFileHashes.Add(text.Path, text.GetHashCode());
-                        file = RainbowParserUtil.ParseRainbowFile(text);
-                        this.rainbowFiles.Add(text.Path, file);
-                    }
-                }
-
-                // Only stop evaluating if something matches
-                if (evaluateFunction != null && evaluateFunction(file))
-                {
-                    matchingFile = file;
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }
