@@ -2,16 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.ComponentModel.Composition;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.VisualStudio.Language.Intellisense;
     using Microsoft.VisualStudio.Text;
-    using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Operations;
-    using Microsoft.VisualStudio.Text.Tagging;
-    using Microsoft.VisualStudio.Utilities;
 
     internal class RainbowQuickInfoSource : IQuickInfoSource
     {
@@ -43,12 +38,11 @@
             var extent = navigator.GetSpanOfEnclosing(new SnapshotSpan(this.subjectBuffer.CurrentSnapshot, querySpan));
             string searchText = extent.GetText()?.Trim('"');
 
-            Debug.WriteLine("searchText=" + searchText);
-
             Guid parsedId;
+            var allFiles = Rainbow.Repository.rainbowFiles.Values;
             if (Guid.TryParse(searchText, out parsedId))
             {
-                var file = Rainbow.Repository.rainbowFiles.Values.FirstOrDefault(f => parsedId.Equals(f.Id));
+                var file = allFiles.FirstOrDefault(f => f != null && parsedId.Equals(f.Id));
                 if(file != null)
                 {
                     applicableToSpan = currentSnapshot.CreateTrackingSpan
@@ -56,13 +50,22 @@
                             extent.Span.Start, file.Id.ToString().Length, SpanTrackingMode.EdgeInclusive
                         );
 
-                    qiContent.Add($"Sitecore path: {file.Path}");
+                    try
+                    {
+                        qiContent.Add($"Sitecore path: {file.Path}");
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        // The collection may be modified, so we can't add anything here right now
+                        Debug.Write($"Exception occurred when trying to add path {file.Path} (skipping as it is not essential): {ex.Message}");
+                    }
+
                     return;
                 }
             }
             else
             {
-                foreach (var file in Rainbow.Repository.rainbowFiles.Values.OrderByDescending(f => f.Path))
+                foreach (var file in allFiles.Where(f => f != null && f.Id != Guid.Empty && f.Path != null).OrderByDescending(f => f.Path))
                 {
                     int foundIndex = searchText.IndexOf(file.Path, StringComparison.CurrentCultureIgnoreCase);
                     if (foundIndex > -1)
@@ -72,7 +75,16 @@
                                 extent.Span.Start + foundIndex, file.Id.ToString().Length, SpanTrackingMode.EdgeInclusive
                             );
 
-                        qiContent.Add($"Sitecore ID: {{{file.Id}}}");
+                        try
+                        {
+                            qiContent.Add($"Sitecore ID: {{{file.Id}}}");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            // The collection may be modified, so we can't add anything here right now
+                            Debug.Write($"Exception occurred when trying to add ID {file.Id} (skipping as it is not essential): {ex.Message}");
+                        }
+
                         return;
                     }
                 }
