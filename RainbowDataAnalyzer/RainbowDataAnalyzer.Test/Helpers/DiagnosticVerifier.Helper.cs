@@ -10,6 +10,8 @@
     using System.Linq;
     using System.Web;
     using System.Web.Mvc;
+    using Glass.Mapper.Configuration.Attributes;
+    using Glass.Mapper.Sc.Configuration.Attributes;
     using RainbowDataAnalyzer.Test.Helpers;
     using Sitecore.Data.Items;
     using Sitecore.Mvc;
@@ -28,6 +30,8 @@
         private static readonly MetadataReference SystemWebReference = MetadataReference.CreateFromFile(typeof(HtmlString).Assembly.Location);
         private static readonly MetadataReference MvcReference = MetadataReference.CreateFromFile(typeof(HtmlHelper).Assembly.Location);
         private static readonly MetadataReference SitecoreMvcReference = MetadataReference.CreateFromFile(typeof(HtmlHelperExtensions).Assembly.Location);
+        private static readonly MetadataReference GlassReference = MetadataReference.CreateFromFile(typeof(AbstractTypeAttribute).Assembly.Location);
+        private static readonly MetadataReference GlassScReference = MetadataReference.CreateFromFile(typeof(SitecoreTypeAttribute).Assembly.Location);
 
         internal static string DefaultFilePathPrefix = "Test";
         internal static string CSharpDefaultFileExt = "cs";
@@ -172,7 +176,9 @@
                 .AddMetadataReference(projectId, SitecoreKernelReference)
                 .AddMetadataReference(projectId, SystemWebReference)
                 .AddMetadataReference(projectId, MvcReference)
-                .AddMetadataReference(projectId, SitecoreMvcReference);
+                .AddMetadataReference(projectId, SitecoreMvcReference)
+                .AddMetadataReference(projectId, GlassReference)
+                .AddMetadataReference(projectId, GlassScReference);
 
             int count = 0;
             foreach (var source in sources)

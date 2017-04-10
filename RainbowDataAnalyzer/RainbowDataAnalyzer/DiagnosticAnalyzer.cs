@@ -102,6 +102,22 @@ namespace RainbowDataAnalyzer
             };
 
         /// <summary>
+        /// The names of Glass attribute types that represent a field
+        /// </summary>
+        private static readonly string[] glassFieldAttributeNames =
+            {
+                "Glass.Mapper.Sc.Configuration.Attributes.SitecoreFieldAttribute"
+            };
+
+        /// <summary>
+        /// The names of Glass attribute types that represent a type
+        /// </summary>
+        private static readonly string[] glassTypeAttributeNames =
+            {
+                "Glass.Mapper.Sc.Configuration.Attributes.SitecoreTypeAttribute"
+            };
+
+        /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
         /// </summary>
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames, RuleForTemplateFieldIds, RuleForTemplateFieldNames, RuleForInfoIdToPath, RuleForInfoPathToId); } }
@@ -135,6 +151,7 @@ namespace RainbowDataAnalyzer
 
                 // If this ID/path refers to a field, we should apply more strict validation
                 bool validateAsField = ShouldValidateAsField(context);
+                bool validateAsGlassField = ShouldValidateAsGlassField(context);
 
                 // Check all string literal expressions
                 var pathOrId = context.Node.ToString().TrimStart('@').Trim('"');
@@ -158,14 +175,15 @@ namespace RainbowDataAnalyzer
                     }
 
                     bool reportInfo = true;
-                    if (validateAsField)
+                    if (validateAsField || validateAsGlassField)
                     {
                         if(matchingFile.TemplateId != SitecoreConstants.SitecoreTemplateFieldId)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleForFieldIds, context.Node.GetLocation(), pathOrId));
                             reportInfo = false; // there is already something reported
                         }
-                        else if(this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
+                        else if((validateAsField && this.ViolatesTemplate(context, matchingFile.Id, out allowedTemplate))
+                             || (validateAsGlassField && this.ViolatesGlassTemplate(context, matchingFile.Id, out allowedTemplate)))
                         {
                             context.ReportDiagnostic(Diagnostic.Create(RuleForTemplateFieldIds, context.Node.GetLocation(), pathOrId, allowedTemplate));
                             reportInfo = false; // there is already something reported
@@ -273,6 +291,41 @@ namespace RainbowDataAnalyzer
             return false;
         }
 
+        private bool ViolatesGlassTemplate(SyntaxNodeAnalysisContext context, Guid fieldId, out string allowedTemplate)
+        {
+            allowedTemplate = null;
+
+            // We know that we are dealing with an existing template field; now we should find out if it can be limited to a particular template
+            var type = context.Node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            if (type == null)
+            {
+                return false;
+            }
+
+            string templateIdStr = type.ChildNodes().OfType<AttributeListSyntax>()
+                .SelectMany(l => l.Attributes.Where(a => glassTypeAttributeNames.Contains(context.SemanticModel.GetSymbolInfo(a).Symbol?.ContainingSymbol.ToDisplayString())))
+                .SelectMany(a => a.DescendantNodes().OfType<AttributeArgumentSyntax>())
+                .Where(a => "TemplateId".Equals(a.NameEquals.Name.Identifier.ValueText) && a.Expression is LiteralExpressionSyntax)
+                .Select(a => ((LiteralExpressionSyntax) a.Expression).Token.ValueText)
+                .FirstOrDefault();
+            Guid templateId;
+            if (Guid.TryParse(templateIdStr, out templateId))
+            {
+                var allTemplatesForField = Repository.FindAllTemplatesForField(context.Options.AdditionalFiles, fieldId);
+
+                if (!allTemplatesForField.Select(t => t.Id).Contains(templateId))
+                {
+                    RainbowFile matchingFile;
+                    Repository.Evaluate(context.Options.AdditionalFiles, file => file.Id == templateId, out matchingFile);
+
+                    allowedTemplate = $"{matchingFile.Id} ({matchingFile.ItemName})";
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Returns true if the syntax node likely refers to a field ID or path.
         /// </summary>
@@ -291,6 +344,26 @@ namespace RainbowDataAnalyzer
 
             return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
                 .LastOrDefault(c => c is IdentifierNameSyntax && SitecoreConstants.IdentifierSyntaxNames.Contains(c.ToString())) != null);
+        }
+
+        /// <summary>
+        /// Returns true if the syntax node likely refers to a field ID or path based on a Glass attribute.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns></returns>
+        private static bool ShouldValidateAsGlassField(SyntaxNodeAnalysisContext context)
+        {
+            var attribute = context.Node.Ancestors().FirstOrDefault(a => a is AttributeSyntax);
+            if (attribute != null)
+            {
+                string attributeTypeName = context.SemanticModel.GetSymbolInfo(attribute).Symbol?.ContainingSymbol.ToDisplayString();
+                if (attributeTypeName != null && glassFieldAttributeNames.Contains(attributeTypeName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

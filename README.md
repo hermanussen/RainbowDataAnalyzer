@@ -50,6 +50,7 @@ Furthermore, if you follow the following rules, the analyzer will also check if 
 - The field needs to be on an item which is assigned to a variable
 - You need to call an extension method on that variable (which can have any implementation you want; it can also be empty) with the following signature: `public static void MustDeriveFrom([NotNull] this Item item, [NotNull] string templatePathOrId)`
 - The call to `MustDeriveFrom(...)` and the accessing of a field must be within the same method (which may also be a Razor View)
+- For projects that use glass attributes (SitecoreType and SitecoreField) on models, the same checks will be done (no need to call `MustDeriveFrom(...)`)
 
 If you want to change the severity of the checks (e.g.: make something a `warning` instead of an `error`), you can do this for individual projects in Visual Studio:
 - Expand the project's references
@@ -63,9 +64,12 @@ I'd like to add support for the following features in the future. If you have an
   - Implement intellisense on paths and field names (some work on this in branch `intellisense-paths-and-fields`, but currently stopped because [Visual Studio does not do completion inside string literals](http://stackoverflow.com/questions/31096360/how-to-auto-complete-string-literal-in-visual-studio))
   - Implement code fix for switching between ID and Path
   - Make field on template checking more context aware for Razor views (e.g.: check context model)
-  - Add support for Glass Mapper, Synthesis and Fortis model checking
+  - Add support for Synthesis and Fortis model checking
   
 ## Release notes
+
+1.4.0
+  - Added support for Glass attribute checking
 
 1.3.0
   - Minor bugfixes
