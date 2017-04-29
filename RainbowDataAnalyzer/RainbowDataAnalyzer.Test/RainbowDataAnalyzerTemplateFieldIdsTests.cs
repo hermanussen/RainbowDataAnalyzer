@@ -49,6 +49,41 @@
         }
 
         [TestMethod]
+        public void AnimalsDoNotHaveSteeringWheelsEvenWithNullConditional()
+        {
+            var expectedInfo = new DiagnosticResult
+            {
+                Id = "RainbowDataAnalyzerIdToPath",
+                Message = "The ID corresponds with path '/sitecore/templates/Animal template'",
+                Severity = DiagnosticSeverity.Info,
+                Locations =
+                                        new[] {
+                                                new DiagnosticResultLocation("Test0.cs", 11, 88)
+                                            }
+            };
+
+            var expected = new DiagnosticResult
+            {
+                Id = "RainbowDataAnalyzerTemplateFieldIds",
+                Message = "The field '{0ec9e41a-0d47-47ec-a0ac-2819edb60311}' is not on the template 'f5cfa142-fd92-4cdc-a6d5-c20020398418 (Animal template)' or on any of its base templates",
+                Severity = DiagnosticSeverity.Error,
+                Locations =
+                        new[] {
+                                new DiagnosticResultLocation("Test0.cs", 2, 169)
+                            }
+            };
+
+            string source = string.Concat(
+                "class TestClass { void SomeMethod() { var item = Sitecore.Context.Item;item?.IsDerived(\"",
+                "f5cfa142-fd92-4cdc-a6d5-c20020398418",
+                "\");var a = item.Fields[new Sitecore.Data.ID(\"",
+                "{0ec9e41a-0d47-47ec-a0ac-2819edb60311}",
+                "\")]; } }");
+
+            this.ExecuteTest(source, expectedInfo, expected);
+        }
+
+        [TestMethod]
         public void AnimalsDoNotHaveSteeringWheelsWithItem()
         {
             var expectedInfo = new DiagnosticResult

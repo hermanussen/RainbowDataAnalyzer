@@ -251,13 +251,24 @@ namespace RainbowDataAnalyzer
             }
 
             var derives = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                .Where(i => derivedMethodNames.Contains(i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
+                .Where(i => derivedMethodNames.Contains(i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString())
+                         || derivedMethodNames.Contains(i.ChildNodes().OfType<MemberBindingExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
             foreach (var derive in derives)
             {
+                string objectName;
+                if (derive.Parent is ConditionalAccessExpressionSyntax)
+                {
+                    objectName = derive.Parent.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText;
+                }
+                else
+                {
+                    objectName = derive.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText;
+                }
+
+                string itemObjectName = context.Node.Ancestors().OfType<ElementAccessExpressionSyntax>().FirstOrDefault()?.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText;
+
                 // Check if it is the same object
-                if (!string.Equals(
-                    derive.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText,
-                    context.Node.Ancestors().OfType<ElementAccessExpressionSyntax>().FirstOrDefault()?.DescendantNodes().OfType<IdentifierNameSyntax>().FirstOrDefault()?.Identifier.ValueText))
+                if (!string.Equals(objectName, itemObjectName))
                 {
                     continue;
                 }
