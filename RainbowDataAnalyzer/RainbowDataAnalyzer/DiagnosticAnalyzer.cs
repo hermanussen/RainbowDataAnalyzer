@@ -118,6 +118,15 @@ namespace RainbowDataAnalyzer
             };
 
         /// <summary>
+        /// Method names that can be used to indicate that an item template is derived from a specific template
+        /// </summary>
+        private static readonly string[] derivedMethodNames =
+            {
+                "MustDeriveFrom",
+                "IsDerived"
+            };
+
+        /// <summary>
         /// Returns a set of descriptors for the diagnostics that this analyzer is capable of producing.
         /// </summary>
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get { return ImmutableArray.Create(RuleForIds, RuleForPaths, RuleForFieldIds, RuleForFieldNames, RuleForTemplateFieldIds, RuleForTemplateFieldNames, RuleForInfoIdToPath, RuleForInfoPathToId); } }
@@ -242,7 +251,7 @@ namespace RainbowDataAnalyzer
             }
 
             var derives = method.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                .Where(i => string.Equals("MustDeriveFrom", i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
+                .Where(i => derivedMethodNames.Contains(i.ChildNodes().OfType<MemberAccessExpressionSyntax>().FirstOrDefault()?.Name?.ToString()));
             foreach (var derive in derives)
             {
                 // Check if it is the same object

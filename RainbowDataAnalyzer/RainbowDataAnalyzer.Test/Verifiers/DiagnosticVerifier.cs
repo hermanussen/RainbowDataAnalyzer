@@ -95,7 +95,7 @@ namespace TestHelper
         private void VerifyDiagnostics(string[] sources, string language, DiagnosticAnalyzer analyzer, string[] yamlContents, params DiagnosticResult[] expected)
         {
             var sourcesList = sources.ToList();
-            sourcesList.Add("using Sitecore;using Sitecore.Data.Items;\r\npublic static class Utils { public static void MustDeriveFrom([NotNull] this Item item, [NotNull] string templatePathOrId) {} }");
+            sourcesList.Add("using Sitecore;using Sitecore.Data.Items;\r\npublic static class Utils { public static void MustDeriveFrom([NotNull] this Item item, [NotNull] string templatePathOrId) {} public static void IsDerived([NotNull] this Item item, [NotNull] string templatePathOrId) {} }");
             sources = sourcesList.ToArray();
             var diagnostics = GetSortedDiagnostics(sources, language, analyzer, yamlContents);
             VerifyDiagnosticResults(diagnostics, analyzer, expected);

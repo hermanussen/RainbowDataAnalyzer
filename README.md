@@ -71,6 +71,7 @@ I'd like to add support for the following features in the future. If you have an
 1.5.0
   - Fixed bug that caused string literals in HtmlHelper.Field(...) calls that were not referencing fields to be validated
   - Fixed bug with info popup; iterating collection that could be modified during iteration
+  - Added support for IsDerived (as used in Habitat)
 
 1.4.0
   - Added support for Glass attribute checking

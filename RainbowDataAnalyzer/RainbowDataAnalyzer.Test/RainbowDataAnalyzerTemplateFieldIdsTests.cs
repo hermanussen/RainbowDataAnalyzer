@@ -41,6 +41,11 @@
                 "\")]; } }");
 
             this.ExecuteTest(source, expectedInfo, expected);
+
+            // Quick check if IsDerived also works
+            expectedInfo.Locations[0] = new DiagnosticResultLocation("Test0.cs", 11, 87);
+            expected.Locations[0] = new DiagnosticResultLocation("Test0.cs", 2, 168);
+            this.ExecuteTest(source.Replace(".MustDeriveFrom(", ".IsDerived("), expectedInfo, expected);
         }
 
         [TestMethod]
