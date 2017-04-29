@@ -39,7 +39,7 @@
             string searchText = extent.GetText()?.Trim('"');
 
             Guid parsedId;
-            var allFiles = Rainbow.Repository.rainbowFiles.Values;
+            var allFiles = Rainbow.Repository.rainbowFiles.Values.ToList();
             if (Guid.TryParse(searchText, out parsedId))
             {
                 var file = allFiles.FirstOrDefault(f => f != null && parsedId.Equals(f.Id));

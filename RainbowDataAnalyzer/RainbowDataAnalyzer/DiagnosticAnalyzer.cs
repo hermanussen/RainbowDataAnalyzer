@@ -336,14 +336,16 @@ namespace RainbowDataAnalyzer
             var bracketNodes = context.Node.Ancestors()
                 .Where(a => a is BracketedArgumentListSyntax || a is ArgumentListSyntax);
             
+            // If this is an invocation like item["field"], then it counts as a field
             if (bracketNodes.Select(b => b.Parent).OfType<ElementAccessExpressionSyntax>()
                     .Any(e => sitecoreItemFullNames.Contains(context.SemanticModel.GetSymbolInfo(e).Symbol?.ContainingSymbol.ToDisplayString())))
             {
                 return true;
             }
 
-            return bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
+            bool isMethodForFieldRendering = bracketNodes.Any(b => b.Parent.ChildNodes().First().ChildNodes()
                 .LastOrDefault(c => c is IdentifierNameSyntax && SitecoreConstants.IdentifierSyntaxNames.Contains(c.ToString())) != null);
+            return isMethodForFieldRendering && bracketNodes.All(b => b.ChildNodes().FirstOrDefault()?.DescendantNodes().Contains(context.Node) ?? false);
         }
 
         /// <summary>

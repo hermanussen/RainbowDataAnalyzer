@@ -68,6 +68,10 @@ I'd like to add support for the following features in the future. If you have an
   
 ## Release notes
 
+1.5.0
+  - Fixed bug that caused string literals in HtmlHelper.Field(...) calls that were not referencing fields to be validated
+  - Fixed bug with info popup; iterating collection that could be modified during iteration
+
 1.4.0
   - Added support for Glass attribute checking
 

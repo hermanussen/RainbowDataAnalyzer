@@ -18,7 +18,7 @@
 
             var yamlContents = new []
                 {
-                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field"
+                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
                 };
 
             var expected = new DiagnosticResult
@@ -55,7 +55,7 @@
 
             var yamlContents = new[]
                 {
-                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field"
+                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
                 };
 
             var expected = new DiagnosticResult
@@ -92,7 +92,7 @@
 
             var yamlContents = new[]
                 {
-                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field"
+                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
                 };
 
             var expected = new DiagnosticResult
@@ -108,7 +108,19 @@
 
             this.VerifyCSharpDiagnostic(test, yamlContents, expected);
         }
+        
+        [TestMethod]
+        public void ShouldNotGetMessageAboutFieldWithHtmlHelper()
+        {
+            var test = "using Sitecore.Mvc;\r\nclass TestClass { void SomeMethod() { new System.Web.Mvc.HtmlHelper(null, null).Sitecore().Field(\"Some field\", Sitecore.Context.Item, new { @class = \"btn btn-default\" }); } }";
 
+            var yamlContents = new[]
+                {
+                    "---\r\nID: \"0ec9e41a-0d47-47ec-a0ac-2819edb60311\"\r\nPath: /sitecore/templates/Some template/Some section/Some field\r\nTemplate: 455a3e98-a627-4b40-8035-e683a0331ac7"
+                };
+
+            this.VerifyCSharpDiagnostic(test, yamlContents);
+        }
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new RainbowDataAnalyzerAnalyzer();
