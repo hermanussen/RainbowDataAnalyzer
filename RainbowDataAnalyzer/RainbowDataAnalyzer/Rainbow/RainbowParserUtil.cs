@@ -45,7 +45,7 @@
                 var textLinePath = textLines.FirstOrDefault(l => l.StartsWith(pathParseKey));
                 if (textLinePath != null)
                 {
-                    result.Path = textLinePath.Substring(pathParseKey.Length).Trim();
+                    result.Path = textLinePath.Substring(pathParseKey.Length).Trim().Trim('\"');
                 }
 
                 string textLineTemplate = textLines.FirstOrDefault(l => l.StartsWith(templateParseKey));
